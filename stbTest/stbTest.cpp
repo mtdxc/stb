@@ -322,13 +322,16 @@ public:
 				for (int j = 0; j < h; j++) {
 					for (size_t i = 0; i < w; i++) {
 						uint8_t& val8 = s[j*w + i];
-						if (val8 > 5) {
+						if (val8 > 0) {
 							uint32_t val = val8 * color / 255;
+							//uint8_t* p = (uint8_t*)&val;
 							memcpy(d + i*channel , &val, channel);
 						}
 					}
 					d += stride;
 				}
+				stbtt_FreeBitmap(s, nullptr);
+
 				/* 调整x */
 				nextX += advanceWidth;
 
@@ -342,7 +345,7 @@ public:
 	}
 };
 
-int main(int argc, const char *argv[])
+int main1(int argc, const char *argv[])
 {
     /* 加载字体（.ttf）文件 */
     const char* word = "STB\nHello world\n abcd!!!";
@@ -354,7 +357,7 @@ int main(int argc, const char *argv[])
 		if (!font.open("c:/windows/fonts/times.ttf")) {
 			return -1;
 		}
-		font.setFontSize(32);
+		font.setFontSize(64);
 		/* 加载位图 */
 		int bitmap_w = 512; /* 位图的宽 */
 		int bitmap_h = 328; /* 位图的高 */
