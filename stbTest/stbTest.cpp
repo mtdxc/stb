@@ -275,9 +275,14 @@ public:
 		codes.push_back(0);
 		return drawText(codes.data(), color, bmp, x, y, stride, channel, owidth, oheight);
 	}
-	int drawText(const int* text, uint32_t color,
-		uint8_t* bmp, int x, int y, int width, int channel,
-		int& owidth, int& oheight) {
+	// 绘制unicode
+	int drawText(const int* text, ///< unicode文本必须以0结尾 
+		uint32_t color, ///< 绘制颜色
+		uint8_t* bmp, ///< 输出位图
+		int x, int y, ///< 输出位置 
+		int width, int channel, ///< 输出位图宽和通道数 1,3,4
+		int& owidth, int& oheight ///< 文本占用的宽和高
+		) {
 		owidth = oheight = 0;
 		int nextX = 0;
 		int lineH = roundf(scale * (ascent - descent + lineGap));
@@ -316,8 +321,11 @@ public:
 				uint8_t* s = stbtt_GetCodepointBitmap(&info_, scale, scale, codep, &w, &h, 0, 0);
 				for (int j = 0; j < h; j++) {
 					for (size_t i = 0; i < w; i++) {
-						uint32_t val = s[j*w + i] * color / 255;
-						memcpy(d + i * channel, &val, channel);
+						uint8_t& val8 = s[j*w + i];
+						if (val8 > 5) {
+							uint32_t val = val8 * color / 255;
+							memcpy(d + i*channel , &val, channel);
+						}
 					}
 					d += stride;
 				}
@@ -338,30 +346,32 @@ int main(int argc, const char *argv[])
 {
     /* 加载字体（.ttf）文件 */
     const char* word = "STB\nHello world\n abcd!!!";
-    const char* fpath = "c:/windows/fonts/times.ttf";
+    const char* fpath = "input.jpg";
 		if (argc>1) fpath = argv[1];
     if (argc>2) word = argv[2];
 
 		stbFont font;
-		if (!font.open(fpath)) {
+		if (!font.open("c:/windows/fonts/times.ttf")) {
 			return -1;
 		}
 		font.setFontSize(32);
-    /* 创建位图 */
-    int bitmap_w = 512; /* 位图的宽 */
-    int bitmap_h = 328; /* 位图的高 */
+		/* 加载位图 */
+		int bitmap_w = 512; /* 位图的宽 */
+		int bitmap_h = 328; /* 位图的高 */
 		int channel = 3;
-    unsigned char *bitmap = (unsigned char *)calloc(bitmap_w * bitmap_h * channel, sizeof(unsigned char));
-    memset(bitmap, 0, bitmap_w * bitmap_h * channel);
-    /* "STB"的 unicode 编码 */
-    // char word[20] = {0x53, 0x54, 0x42};
+		unsigned char* bitmap = stbi_load(fpath, &bitmap_w, &bitmap_h, &channel, 3);
+		if (!bitmap) {
+			printf("uanble to open file %s\n", fpath);
+			return -1;
+		}
+
 		int width, height;
 		font.drawText(word, 0x000000FF, bitmap, 10, 10, bitmap_w, channel, width, height);
 
-    /* 将位图数据保存到1通道的png图像中 */
+		/* 将位图数据保存到1通道的png图像中 */
 		stbi_write_png("stb.png", bitmap_w, bitmap_h, channel, bitmap, bitmap_w * channel);
 
-    free(bitmap);
+		stbi_image_free(bitmap);
 
     return 0;
 }
