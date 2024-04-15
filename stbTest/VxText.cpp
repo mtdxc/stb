@@ -163,6 +163,7 @@ int CvxText::putText(Mat& img, const char* text, Point pos, Scalar color)
 	if (text == NULL) return -1;
 
 	int i;
+	int orgx = pos.x;
 	for (i = 0; text[i] != '\0'; ++i) {
 		wchar_t wc = text[i];
 
@@ -170,7 +171,7 @@ int CvxText::putText(Mat& img, const char* text, Point pos, Scalar color)
 		if (!isascii(wc)) mbtowc(&wc, &text[i++], 2);
 
 		// 输出当前的字符
-		putWChar(img, wc, pos, color);
+		putWChar(img, wc, pos, color, orgx);
 	}
 
 	return i;
@@ -182,16 +183,17 @@ int CvxText::putText(Mat& img, const wchar_t* text, Point pos, Scalar color)
 	if (text == NULL) return -1;
 
 	int i;
+	int orgx = pos.x;
 	for (i = 0; text[i] != '\0'; ++i) {
 		// 输出当前的字符
-		putWChar(img, text[i], pos, color);
+		putWChar(img, text[i], pos, color, orgx);
 	}
 
 	return i;
 }
 
 // 输出当前字符, 更新m_pos位置
-void CvxText::putWChar(Mat& img, wchar_t wc, Point& pos, Scalar color)
+void CvxText::putWChar(Mat& img, wchar_t wc, Point& pos, Scalar color, int orgx)
 {
 	// 根据unicode生成字体的二值位图
 	FT_UInt glyph_index = FT_Get_Char_Index(m_face, wc);
@@ -203,6 +205,13 @@ void CvxText::putWChar(Mat& img, wchar_t wc, Point& pos, Scalar color)
 	// 行列数
 	int rows = slot->bitmap.rows;
 	int cols = slot->bitmap.width;
+	double space = m_fontSize.val[0] * m_fontSize.val[1];
+	double sep = m_fontSize.val[0] * m_fontSize.val[2];
+	if (wc=='\n') {
+		pos.y += rows + space;
+		pos.x = orgx;
+		return;
+	}
 
 	for (int i = 0; i < rows; ++i) {
 		for (int j = 0; j < cols; ++j) {
@@ -231,9 +240,6 @@ void CvxText::putWChar(Mat& img, wchar_t wc, Point& pos, Scalar color)
 	}
 
 	// 修改下一个字的输出位置
-	double space = m_fontSize.val[0] * m_fontSize.val[1];
-	double sep = m_fontSize.val[0] * m_fontSize.val[2];
-
 	pos.x += (int)((cols ? cols : space) + sep);
 }
 
@@ -312,13 +318,15 @@ int main(int argc, char** argv) {
 
 		//字母文字
 		//putText(image, "HELLO", Point(160, 1065), CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0,0, 255), 2, 1);
-
-		char* str = (char *)"你好123！";
-		if (wchar_t *w_str = ToWchar(str)) {
+#if 1
+		const wchar_t* w_str = L"你好123！\nabcd!!";
+		text.putText(image, w_str, Point(160, 100), Scalar(0, 0, 255));
+#else
+		if (wchar_t *w_str = ToWchar("你好123！\nabcd!!")) {
 			text.putText(image, w_str, Point(160, 100), Scalar(0, 0, 255));
 			delete[] w_str;
 		}
-
+#endif
 		//printf("绘制图之后[%s]\n", log_Time());  
 		if ((i % step) == 0){
 			image.save("output.jpg");

@@ -58,7 +58,7 @@ namespace cvx {
 
 	private:
 		CvxText& operator=(const CvxText&);
-		void putWChar(Mat& img, wchar_t wc, Point& pos, Scalar color);
+		void putWChar(Mat& img, wchar_t wc, Point& pos, Scalar color, int orgx);
 
 		FT_Library   m_library;
 		FT_Face      m_face;
