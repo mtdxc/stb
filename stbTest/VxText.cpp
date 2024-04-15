@@ -1,12 +1,14 @@
-#include <sys/timeb.h>
+ï»¿#include <sys/timeb.h>
 #include <time.h>
 #include <ctype.h>
 #include <locale.h>
 #include <assert.h>
-#include <algorithm>
+#include <math.h>
 #include "VxText.h"
 #include "freetype.h"
+#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h" /* http://nothings.org/stb/stb_image_write.h */
+#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h" /* http://nothings.org/stb/stb_image_write.h */
 #ifdef _WIN32
 #define strcasecmp _stricmp
@@ -73,23 +75,23 @@ bool Mat::save(const char* path) {
 	return ret;
 }
 
-// ´ò¿ª×Ö¿â
+// æ‰“å¼€å­—åº“
 CvxText::CvxText(const char* freeType)
 {
 	assert(freeType != NULL);
 
-	// ´ò¿ª×Ö¿âÎÄ¼ş, ´´½¨Ò»¸ö×ÖÌå
+	// æ‰“å¼€å­—åº“æ–‡ä»¶, åˆ›å»ºä¸€ä¸ªå­—ä½“
 	if (FT_Init_FreeType(&m_library)) throw;
 	if (FT_New_Face(m_library, freeType, 0, &m_face)) throw;
 
-	// ÉèÖÃ×ÖÌåÊä³ö²ÎÊı
+	// è®¾ç½®å­—ä½“è¾“å‡ºå‚æ•°
 	restoreFont();
 
-	// ÉèÖÃCÓïÑÔµÄ×Ö·û¼¯»·¾³
+	// è®¾ç½®Cè¯­è¨€çš„å­—ç¬¦é›†ç¯å¢ƒ
 	setlocale(LC_ALL, "");
 }
 
-// ÊÍ·ÅFreeType×ÊÔ´
+// é‡Šæ”¾FreeTypeèµ„æº
 CvxText::~CvxText()
 {
 	FT_Done_Face(m_face);
@@ -106,15 +108,15 @@ void CvxText::getFont(int* type, Scalar* size, bool* underline, float* diaphanei
 
 void CvxText::setFont(int* type, Scalar* size, bool* underline, float* diaphaneity)
 {
-	// ²ÎÊıºÏ·¨ĞÔ¼ì²é
+	// å‚æ•°åˆæ³•æ€§æ£€æŸ¥
 	if (type) {
 		if (type) m_fontType = *type;
 	}
 	if (size) {
-		m_fontSize.val[0] = std::fabs(size->val[0]);
-		m_fontSize.val[1] = std::fabs(size->val[1]);
-		m_fontSize.val[2] = std::fabs(size->val[2]);
-		m_fontSize.val[3] = std::fabs(size->val[3]);
+		m_fontSize.val[0] = fabs(size->val[0]);
+		m_fontSize.val[1] = fabs(size->val[1]);
+		m_fontSize.val[2] = fabs(size->val[2]);
+		m_fontSize.val[3] = fabs(size->val[3]);
 	}
 	if (underline) {
 		m_fontUnderline = *underline;
@@ -126,25 +128,25 @@ void CvxText::setFont(int* type, Scalar* size, bool* underline, float* diaphanei
 	FT_Set_Pixel_Sizes(m_face, (int)m_fontSize.val[0], 0);
 }
 
-// »Ö¸´Ô­Ê¼µÄ×ÖÌåÉèÖÃ
+// æ¢å¤åŸå§‹çš„å­—ä½“è®¾ç½®
 void CvxText::restoreFont()
 {
-	m_fontType = 0;            // ×ÖÌåÀàĞÍ(²»Ö§³Ö)
+	m_fontType = 0;            // å­—ä½“ç±»å‹(ä¸æ”¯æŒ)
 
-	m_fontSize.val[0] = 20;      // ×ÖÌå´óĞ¡
-	m_fontSize.val[1] = 0.5;   // ¿Õ°××Ö·û´óĞ¡±ÈÀı
-	m_fontSize.val[2] = 0.1;   // ¼ä¸ô´óĞ¡±ÈÀı
-	m_fontSize.val[3] = 0;      // Ğı×ª½Ç¶È(²»Ö§³Ö)
+	m_fontSize.val[0] = 20;      // å­—ä½“å¤§å°
+	m_fontSize.val[1] = 0.5;   // ç©ºç™½å­—ç¬¦å¤§å°æ¯”ä¾‹
+	m_fontSize.val[2] = 0.1;   // é—´éš”å¤§å°æ¯”ä¾‹
+	m_fontSize.val[3] = 0;      // æ—‹è½¬è§’åº¦(ä¸æ”¯æŒ)
 
-	m_fontUnderline = false;   // ÏÂ»­Ïß(²»Ö§³Ö)
+	m_fontUnderline = false;   // ä¸‹ç”»çº¿(ä¸æ”¯æŒ)
 
-	m_fontDiaphaneity = 1.0;   // É«²Ê±ÈÀı(¿É²úÉúÍ¸Ã÷Ğ§¹û)
+	m_fontDiaphaneity = 1.0;   // è‰²å½©æ¯”ä¾‹(å¯äº§ç”Ÿé€æ˜æ•ˆæœ)
 
-	// ÉèÖÃ×Ö·û´óĞ¡
+	// è®¾ç½®å­—ç¬¦å¤§å°
 	FT_Set_Pixel_Sizes(m_face, (int)m_fontSize.val[0], 0);
 }
 
-// Êä³öº¯Êı(ÑÕÉ«Ä¬ÈÏÎª°×É«)
+// è¾“å‡ºå‡½æ•°(é¢œè‰²é»˜è®¤ä¸ºç™½è‰²)
 int CvxText::putText(Mat& img, char* text, Point pos)
 {
 	return putText(img, text, pos, Scalar(255, 255, 255));
@@ -164,10 +166,10 @@ int CvxText::putText(Mat& img, const char* text, Point pos, Scalar color)
 	for (i = 0; text[i] != '\0'; ++i) {
 		wchar_t wc = text[i];
 
-		// ½âÎöË«×Ö½Ú·ûºÅ
+		// è§£æåŒå­—èŠ‚ç¬¦å·
 		if (!isascii(wc)) mbtowc(&wc, &text[i++], 2);
 
-		// Êä³öµ±Ç°µÄ×Ö·û
+		// è¾“å‡ºå½“å‰çš„å­—ç¬¦
 		putWChar(img, wc, pos, color);
 	}
 
@@ -181,24 +183,24 @@ int CvxText::putText(Mat& img, const wchar_t* text, Point pos, Scalar color)
 
 	int i;
 	for (i = 0; text[i] != '\0'; ++i) {
-		// Êä³öµ±Ç°µÄ×Ö·û
+		// è¾“å‡ºå½“å‰çš„å­—ç¬¦
 		putWChar(img, text[i], pos, color);
 	}
 
 	return i;
 }
 
-// Êä³öµ±Ç°×Ö·û, ¸üĞÂm_posÎ»ÖÃ
+// è¾“å‡ºå½“å‰å­—ç¬¦, æ›´æ–°m_posä½ç½®
 void CvxText::putWChar(Mat& img, wchar_t wc, Point& pos, Scalar color)
 {
-	// ¸ù¾İunicodeÉú³É×ÖÌåµÄ¶şÖµÎ»Í¼
+	// æ ¹æ®unicodeç”Ÿæˆå­—ä½“çš„äºŒå€¼ä½å›¾
 	FT_UInt glyph_index = FT_Get_Char_Index(m_face, wc);
 	FT_Load_Glyph(m_face, glyph_index, FT_LOAD_DEFAULT);
 	FT_Render_Glyph(m_face->glyph, FT_RENDER_MODE_MONO);
 
 	FT_GlyphSlot slot = m_face->glyph;
 
-	// ĞĞÁĞÊı
+	// è¡Œåˆ—æ•°
 	int rows = slot->bitmap.rows;
 	int cols = slot->bitmap.width;
 
@@ -214,7 +216,7 @@ void CvxText::putWChar(Mat& img, wchar_t wc, Point& pos, Scalar color)
 					auto pixel = img.at(c, r);
 					Scalar scalar = Scalar(pixel[0], pixel[1], pixel[2]);
 
-					// ½øĞĞÉ«²ÊÈÚºÏ
+					// è¿›è¡Œè‰²å½©èåˆ
 					float p = m_fontDiaphaneity;
 					for (int k = 0; k < 4; ++k) {
 						scalar.val[k] = scalar.val[k] * (1 - p) + color.val[k] * p;
@@ -228,7 +230,7 @@ void CvxText::putWChar(Mat& img, wchar_t wc, Point& pos, Scalar color)
 		}
 	}
 
-	// ĞŞ¸ÄÏÂÒ»¸ö×ÖµÄÊä³öÎ»ÖÃ
+	// ä¿®æ”¹ä¸‹ä¸€ä¸ªå­—çš„è¾“å‡ºä½ç½®
 	double space = m_fontSize.val[0] * m_fontSize.val[1];
 	double sep = m_fontSize.val[0] * m_fontSize.val[2];
 
@@ -241,14 +243,14 @@ static wchar_t* ToWchar(char* &src, const char *locale = "zh_CN.utf8")
 		return 0;
 	}
 
-	// ¸ù¾İ»·¾³±äÁ¿ÉèÖÃlocale
+	// æ ¹æ®ç¯å¢ƒå˜é‡è®¾ç½®locale
 	setlocale(LC_CTYPE, locale);
 
-	// µÃµ½×ª»¯ÎªĞèÒªµÄ¿í×Ö·û´óĞ¡
+	// å¾—åˆ°è½¬åŒ–ä¸ºéœ€è¦çš„å®½å­—ç¬¦å¤§å°
 	int w_size = mbstowcs(NULL, src, 0) + 1;
 
-	// w_size = 0 ËµÃ÷mbstowcs·µ»ØÖµÎª-1¡£¼´ÔÚÔËĞĞ¹ı³ÌÖĞÓöµ½ÁË·Ç·¨×Ö·û(ºÜÓĞ¿ÉÄÜÊ¹locale
-	// Ã»ÓĞÉèÖÃÕıÈ·)
+	// w_size = 0 è¯´æ˜mbstowcsè¿”å›å€¼ä¸º-1ã€‚å³åœ¨è¿è¡Œè¿‡ç¨‹ä¸­é‡åˆ°äº†éæ³•å­—ç¬¦(å¾ˆæœ‰å¯èƒ½ä½¿locale
+	// æ²¡æœ‰è®¾ç½®æ­£ç¡®)
 	if (w_size == 0) {
 		return 0;
 	}
@@ -266,7 +268,7 @@ static wchar_t* ToWchar(char* &src, const char *locale = "zh_CN.utf8")
 }
 
 #if 1
-/*Ê±¼ä´òÓ¡*/
+/*æ—¶é—´æ‰“å°*/
 char* log_Time(void)
 {
 	struct  tm      *ptm;
@@ -286,9 +288,9 @@ int main(int argc, char** argv) {
 		times = atoi(argv[1]);
 	int step = times / 10;
 
-	// printf("´ò¿ªÍ¼Ö®Ç°[%s]\n", log_Time());
-	CvxText text("c:/windows/fonts/msyh.ttc"); //Ö¸¶¨×ÖÌå
-	Scalar size1{ 40, 0.5, 0.1, 0 }; // (×ÖÌå´óĞ¡, ÎŞĞ§µÄ, ×Ö·û¼ä¾à, ÎŞĞ§µÄ }
+	// printf("æ‰“å¼€å›¾ä¹‹å‰[%s]\n", log_Time());
+	CvxText text("c:/windows/fonts/msyh.ttc"); //æŒ‡å®šå­—ä½“
+	Scalar size1{ 40, 0.5, 0.1, 0 }; // (å­—ä½“å¤§å°, æ— æ•ˆçš„, å­—ç¬¦é—´è·, æ— æ•ˆçš„ }
 	text.setFont(nullptr, &size1, nullptr, 0);
 
 	// open image
@@ -300,27 +302,27 @@ int main(int argc, char** argv) {
 	printf("start[%s]\n", log_Time());
 	for (int i = 0; i<times; i++)
 	{
-		//printf("´ò¿ªÍ¼Ö®ºó[%s]\n", log_Time());
+		//printf("æ‰“å¼€å›¾ä¹‹å[%s]\n", log_Time());
 		Mat image(input);
-		/*Í¼Æ¬´óĞ¡*/
+		/*å›¾ç‰‡å¤§å°*/
 		//std::cout << "size (after reading): " << image.height << " , "<< image.width << std::endl;
 
-		//»­¿ò
+		//ç”»æ¡†
 		//rectangle(image, Point(155, 693), Point(349, 1073), Scalar(0, 0, 255), 3, 1);
 
-		//×ÖÄ¸ÎÄ×Ö
+		//å­—æ¯æ–‡å­—
 		//putText(image, "HELLO", Point(160, 1065), CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0,0, 255), 2, 1);
 
-		char* str = (char *)"ÄãºÃ123£¡";
+		char* str = (char *)"ä½ å¥½123ï¼";
 		if (wchar_t *w_str = ToWchar(str)) {
 			text.putText(image, w_str, Point(160, 100), Scalar(0, 0, 255));
 			delete[] w_str;
 		}
 
-		//printf("»æÖÆÍ¼Ö®ºó[%s]\n", log_Time());  
+		//printf("ç»˜åˆ¶å›¾ä¹‹å[%s]\n", log_Time());  
 		if ((i % step) == 0){
 			image.save("output.jpg");
-			printf("µÚ%dÕÅÍ¼±£´æ[%s]\n", i, log_Time());
+			printf("ç¬¬%då¼ å›¾ä¿å­˜[%s]\n", i, log_Time());
 		}
 	}
 

@@ -10,7 +10,11 @@
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h" /* http://nothings.org/stb/stb_truetype.h */
-
+#ifdef _WIN32
+#include <tchar.h>
+#else
+#define TCHAR char
+#endif
 #include <memory>
 int enc_unicode_to_utf8_one(unsigned long unic, unsigned char *pOutput, int outSize)
 {
@@ -275,6 +279,16 @@ public:
 		codes.push_back(0);
 		return drawText(codes.data(), color, bmp, x, y, stride, channel, owidth, oheight);
 	}
+	int drawText(const wchar_t* text, uint32_t color,
+		uint8_t* bmp, int x, int y, int stride, int channel,
+		int& owidth, int& oheight) {
+		std::vector<int> codes;
+		while (*text) {
+			codes.push_back(*text++);
+		}
+		codes.push_back(0);
+		return drawText(codes.data(), color, bmp, x, y, stride, channel, owidth, oheight);
+	}
 	// 绘制unicode
 	int drawText(const int* text, ///< unicode文本必须以0结尾 
 		uint32_t color, ///< 绘制颜色
@@ -345,38 +359,38 @@ public:
 	}
 };
 
-int main1(int argc, const char *argv[])
+int main(int argc, const char *argv[])
 {
-    /* 加载字体（.ttf）文件 */
-    const char* word = "STB\nHello world\n abcd!!!";
-    const char* fpath = "input.jpg";
-		if (argc>1) fpath = argv[1];
-    if (argc>2) word = argv[2];
+	/* 加载字体（.ttf）文件 */
+	const TCHAR* word = _T("STB\nHello世界\n abcd!!!");
+	const char* fpath = "input.jpg";
+	if (argc>1) fpath = argv[1];
+	//if (argc>2) word = argv[2];
 
-		stbFont font;
-		if (!font.open("c:/windows/fonts/times.ttf")) {
-			return -1;
-		}
-		font.setFontSize(64);
-		/* 加载位图 */
-		int bitmap_w = 512; /* 位图的宽 */
-		int bitmap_h = 328; /* 位图的高 */
-		int channel = 3;
-		unsigned char* bitmap = stbi_load(fpath, &bitmap_w, &bitmap_h, &channel, 3);
-		if (!bitmap) {
-			printf("uanble to open file %s\n", fpath);
-			return -1;
-		}
+	stbFont font;
+	if (!font.open("c:/windows/fonts/times.ttf")) {
+		return -1;
+	}
+	font.setFontSize(64);
+	/* 加载位图 */
+	int bitmap_w = 512; /* 位图的宽 */
+	int bitmap_h = 328; /* 位图的高 */
+	int channel = 3;
+	unsigned char* bitmap = stbi_load(fpath, &bitmap_w, &bitmap_h, &channel, 3);
+	if (!bitmap) {
+		printf("uanble to open file %s\n", fpath);
+		return -1;
+	}
 
-		int width, height;
-		font.drawText(word, 0x000000FF, bitmap, 10, 10, bitmap_w, channel, width, height);
+	int width, height;
+	font.drawText(word, 0x000000FF, bitmap, 10, 10, bitmap_w, channel, width, height);
 
-		/* 将位图数据保存到1通道的png图像中 */
-		stbi_write_png("stb.png", bitmap_w, bitmap_h, channel, bitmap, bitmap_w * channel);
+	/* 将位图数据保存到1通道的png图像中 */
+	stbi_write_png("stb.png", bitmap_w, bitmap_h, channel, bitmap, bitmap_w * channel);
 
-		stbi_image_free(bitmap);
+	stbi_image_free(bitmap);
 
-    return 0;
+	return 0;
 }
 /*
 使用stb_truetype库解析ttf字体的步骤通常如下：
