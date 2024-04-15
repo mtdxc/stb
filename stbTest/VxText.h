@@ -14,6 +14,7 @@ namespace cvx {
 		}
 		double val[4];
 	};
+
 	struct Point{
 		Point(int v1 = 0, int v2 = 0) :x(v1), y(v2){}
 		int x, y;
@@ -24,22 +25,32 @@ namespace cvx {
 		int width = 0;
 		int height = 0;
 	};
+
 	struct Mat {
 		Mat(){}
 		Mat(const Mat& m);
-		Mat(int w, int h, int c, uint8_t* b = nullptr);
+		Mat(int w, int h, int c, uint8_t* b = nullptr, bool o = true);
 		~Mat();
-
+		
 		bool load(const char* path);
 		bool save(const char* path);
-		void assign(uint8_t* b, int w, int h, int c, bool ref=true);
-		uint8_t* at(int x, int y){ return data + y*stride + x*channel; }
+		
+		void assign(uint8_t* b, int w, int h, int c, bool o);
+		void clear();
 
-		int width = 0; 
-		int height = 0;
-		int channel = 0;
-		int stride = 0;
-		uint8_t* data = nullptr;
+		bool empty() const { return data_ == nullptr; }
+		uint8_t* at(int x, int y){ return data_ + y*stride_ + x*channel_; }
+		int width() const { return width_; }
+		int height() const { return height_; }
+		int channel() const { return channel_; }
+		int stride() const { return stride_; }
+	private:
+		bool owner_ = false;
+		uint8_t* data_ = nullptr;
+		int width_ = 0;
+		int height_ = 0;
+		int channel_ = 0;
+		int stride_ = 0;
 	};
 
 	class CvxText {
@@ -69,7 +80,7 @@ namespace cvx {
 		float      m_fontDiaphaneity;
 	};
 
-	// //ºº×Ö
+	// //æ±‰å­—
 	// int myputText(Mat img, const char *text, Point pos, Scalar color);
 	// void myputWChar(Mat img, wchar_t wc, Point &pos, Scalar color);
 }

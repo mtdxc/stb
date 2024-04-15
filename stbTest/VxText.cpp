@@ -17,33 +17,44 @@
 using namespace cvx;
 
 Mat::~Mat() {
-	assign(nullptr, 0, 0, 0);
+	clear();
 }
-Mat::Mat(const Mat& m) : data(nullptr){
-	assign(m.data, m.width, m.height, m.channel, false);
+
+Mat::Mat(const Mat& m) : data_(nullptr){
+	// deep copy
+	assign(m.data_, m.width_, m.height_, m.channel_, true);
 }
-Mat::Mat(int w, int h, int c, uint8_t* b) : data(nullptr) {
-	assign(b, w, h, c, false);
+
+Mat::Mat(int w, int h, int c, uint8_t* b, bool o) : data_(nullptr) {
+	assign(b, w, h, c, o);
 }
-void Mat::assign(uint8_t* b, int w, int h, int c, bool ref) {
-	if (data){
-		stbi_image_free(data);
-		data = nullptr;
+
+void Mat::clear() {
+	if (data_) {
+		if (owner_)
+			free(data_);
+		data_ = nullptr;
 	}
-	width = height = channel = stride = 0;
+	owner_ = false;
+	width_ = height_ = channel_ = stride_ = 0;
+}
+
+void Mat::assign(uint8_t* b, int w, int h, int c, bool o) {
+	clear();
 	if (b && w && h) {
-		if (ref){
-			data = b;
+		this->owner_ = o;
+		if (owner_) {
+			int n = w*h*c;
+			data_ = (uint8_t*)malloc(n);
+			memcpy(data_, b, n);
 		}
 		else{
-			int n = w*h*c;
-			data = (uint8_t*)malloc(n);
-			memcpy(data, b, n);
+			data_ = b;
 		}
-		width = w;
-		height = h;
-		channel = c;
-		stride = width * channel;
+		width_ = w;
+		height_ = h;
+		channel_ = c;
+		stride_ = w * c;
 	}
 }
 
@@ -52,7 +63,8 @@ bool Mat::load(const char* path) {
 	int w, h, c;
 	uint8_t* b = stbi_load(path, &w, &h, &c, 3);
 	if (b) {
-		assign(b, w, h, c);
+		assign(b, w, h, c, false);
+		owner_ = true;
 		ret = true;
 	}
 	return ret;
@@ -60,16 +72,16 @@ bool Mat::load(const char* path) {
 
 bool Mat::save(const char* path) {
 	bool ret = false;
-	if (data) {
+	if (data_) {
 		const char* pdot = strrchr(path, '.');
 		if (!strcasecmp(pdot, ".bmp")) {
-			ret = stbi_write_bmp(path, width, height, channel, data);
+			ret = stbi_write_bmp(path, width_, height_, channel_, data_);
 		}
 		else if (!strcasecmp(pdot, ".png")) {
-			ret = stbi_write_png(path, width, height, channel, data, stride);
+			ret = stbi_write_png(path, width_, height_, channel_, data_, stride_);
 		}
 		else {
-			ret = stbi_write_jpg(path, width, height, channel, data, 90);
+			ret = stbi_write_jpg(path, width_, height_, channel_, data_, 90);
 		}
 	}
 	return ret;
@@ -159,7 +171,7 @@ int CvxText::putText(Mat& img, const wchar_t* text, Point pos)
 
 int CvxText::putText(Mat& img, const char* text, Point pos, Scalar color)
 {
-	if (img.data == NULL) return -1;
+	if (img.empty()) return -1;
 	if (text == NULL) return -1;
 
 	int i;
@@ -179,7 +191,7 @@ int CvxText::putText(Mat& img, const char* text, Point pos, Scalar color)
 
 int CvxText::putText(Mat& img, const wchar_t* text, Point pos, Scalar color)
 {
-	if (img.data == NULL) return -1;
+	if (img.empty()) return -1;
 	if (text == NULL) return -1;
 
 	int i;
@@ -221,7 +233,7 @@ void CvxText::putWChar(Mat& img, wchar_t wc, Point& pos, Scalar color, int orgx)
 				int r = pos.y - (rows - 1 - i);
 				int c = pos.x + j;
 
-				if (r >= 0 && r < img.height && c >= 0 && c < img.width) {
+				if (r >= 0 && r < img.height() && c >= 0 && c < img.width()) {
 					auto pixel = img.at(c, r);
 					Scalar scalar = Scalar(pixel[0], pixel[1], pixel[2]);
 
