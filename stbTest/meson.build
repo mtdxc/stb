@@ -8,6 +8,6 @@ executable('stbTest',
            include_directories: include_dirs,
            install : true)
 executable('VxTest',
-           'VxText.cpp',
+           'VxText.cpp', 'VxText.h',
            include_directories: include_dirs,
            install : true)

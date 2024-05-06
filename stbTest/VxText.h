@@ -62,8 +62,14 @@ namespace cvx {
 		void setFont(int* type, Scalar* size = NULL, bool* underline = NULL, float* diaphaneity = NULL);
 		void restoreFont();
 
-		int putText(Mat& img, char* text, Point pos);
-		int putText(Mat& img, const wchar_t* text, Point pos);
+		// 文本输出函数(颜色默认为白色)
+		int putText(Mat& img, char* text, Point pos) {
+			return putText(img, text, pos, Scalar(255, 255, 255));
+		}
+
+		int putText(Mat& img, const wchar_t* text, Point pos) {
+			return putText(img, text, pos, Scalar(255, 255, 255));
+		}
 		int putText(Mat& img, const char* text, Point pos, Scalar color);
 		int putText(Mat& img, const wchar_t* text, Point pos, Scalar color);
 
@@ -74,9 +80,9 @@ namespace cvx {
 		FT_Library   m_library;
 		FT_Face      m_face;
 
-		int         m_fontType;
-		Scalar   m_fontSize;
-		bool      m_fontUnderline;
+		int        m_fontType;
+		Scalar     m_fontSize;
+		bool       m_fontUnderline;
 		float      m_fontDiaphaneity;
 	};
 

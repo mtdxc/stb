@@ -42,8 +42,8 @@ void Mat::clear() {
 void Mat::assign(uint8_t* b, int w, int h, int c, bool o) {
 	clear();
 	if (b && w && h) {
-		this->owner_ = o;
-		if (owner_) {
+		owner_ = o;
+		if (o) {
 			int n = w*h*c;
 			data_ = (uint8_t*)malloc(n);
 			memcpy(data_, b, n);
@@ -61,6 +61,7 @@ void Mat::assign(uint8_t* b, int w, int h, int c, bool o) {
 bool Mat::load(const char* path) {
 	bool ret = false;
 	int w, h, c;
+	w = h = c = 0;
 	uint8_t* b = stbi_load(path, &w, &h, &c, 3);
 	if (b) {
 		assign(b, w, h, c, false);
@@ -158,17 +159,6 @@ void CvxText::restoreFont()
 	FT_Set_Pixel_Sizes(m_face, (int)m_fontSize.val[0], 0);
 }
 
-// 输出函数(颜色默认为白色)
-int CvxText::putText(Mat& img, char* text, Point pos)
-{
-	return putText(img, text, pos, Scalar(255, 255, 255));
-}
-
-int CvxText::putText(Mat& img, const wchar_t* text, Point pos)
-{
-	return putText(img, text, pos, Scalar(255, 255, 255));
-}
-
 int CvxText::putText(Mat& img, const char* text, Point pos, Scalar color)
 {
 	if (img.empty()) return -1;
@@ -209,7 +199,9 @@ void CvxText::putWChar(Mat& img, wchar_t wc, Point& pos, Scalar color, int orgx)
 {
 	// 根据unicode生成字体的二值位图
 	FT_UInt glyph_index = FT_Get_Char_Index(m_face, wc);
-	FT_Load_Glyph(m_face, glyph_index, FT_LOAD_DEFAULT);
+	int flags = FT_LOAD_DEFAULT;
+	flags = FT_LOAD_DEFAULT | FT_LOAD_NO_AUTOHINT | FT_OUTLINE_HIGH_PRECISION;
+	FT_Load_Glyph(m_face, glyph_index, flags);
 	FT_Render_Glyph(m_face->glyph, FT_RENDER_MODE_MONO);
 
 	FT_GlyphSlot slot = m_face->glyph;
@@ -341,7 +333,7 @@ int main(int argc, char** argv) {
 #endif
 		//printf("绘制图之后[%s]\n", log_Time());  
 		if ((i % step) == 0){
-			image.save("output.jpg");
+			image.save("output.png");
 			printf("第%d张图保存[%s]\n", i, log_Time());
 		}
 	}
