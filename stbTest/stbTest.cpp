@@ -89,10 +89,10 @@ int enc_utf8_to_unicode_one(const unsigned char* pInput, unsigned long *Unic)
 {
 	assert(pInput != NULL && Unic != NULL);
 
-	// b1 è¡¨ç¤ºUTF-8ç¼–ç çš„pInputä¸­çš„é«˜å­—èŠ‚, b2 è¡¨ç¤ºæ¬¡é«˜å­—èŠ‚, ...
+	// b1 ±íÊ¾UTF-8±àÂëµÄpInputÖĞµÄ¸ß×Ö½Ú, b2 ±íÊ¾´Î¸ß×Ö½Ú, ...
 	char b1, b2, b3, b4, b5, b6;
 
-	*Unic = 0x0; // æŠŠ *Unic åˆå§‹åŒ–ä¸ºå…¨é›¶
+	*Unic = 0x0; // °Ñ *Unic ³õÊ¼»¯ÎªÈ«Áã
 	int utfbytes = enc_get_utf8_size(*pInput);
 	unsigned char *pOutput = (unsigned char *)Unic;
 
@@ -169,17 +169,17 @@ int enc_utf8_to_unicode_one(const unsigned char* pInput, unsigned long *Unic)
 	return utfbytes;
 }
 
-// å­—ä½“æ–‡ä»¶
+// ×ÖÌåÎÄ¼ş
 class stbFont {
 	stbtt_fontinfo info_;
 	std::shared_ptr<uint8_t> buffer_;
 	float scale = 1.0f;
 	/**
-	* è·å–å‚ç›´æ–¹å‘ä¸Šçš„åº¦é‡
-	* ascentï¼šå­—ä½“ä»åŸºçº¿åˆ°é¡¶éƒ¨çš„é«˜åº¦ï¼›
-	* descentï¼šåŸºçº¿åˆ°åº•éƒ¨çš„é«˜åº¦ï¼Œé€šå¸¸ä¸ºè´Ÿå€¼ï¼›
-	* lineGapï¼šä¸¤ä¸ªå­—ä½“ä¹‹é—´çš„é—´è·ï¼›
-	* è¡Œé—´è·ä¸ºï¼šascent - descent + lineGapã€‚
+	* »ñÈ¡´¹Ö±·½ÏòÉÏµÄ¶ÈÁ¿
+	* ascent£º×ÖÌå´Ó»ùÏßµ½¶¥²¿µÄ¸ß¶È£»
+	* descent£º»ùÏßµ½µ×²¿µÄ¸ß¶È£¬Í¨³£Îª¸ºÖµ£»
+	* lineGap£ºÁ½¸ö×ÖÌåÖ®¼äµÄ¼ä¾à£»
+	* ĞĞ¼ä¾àÎª£ºascent - descent + lineGap¡£
 	*/
 	int ascent = 0;
 	int lineGap = 0;
@@ -193,9 +193,9 @@ public:
 			printf("Can not open font file %s!\n", path);
 			return 0;
 		}
-		fseek(fontFile, 0, SEEK_END); /* è®¾ç½®æ–‡ä»¶æŒ‡é’ˆåˆ°æ–‡ä»¶å°¾ï¼ŒåŸºäºæ–‡ä»¶å°¾åç§»0å­—èŠ‚ */
-		long size = ftell(fontFile);       /* è·å–æ–‡ä»¶å¤§å°ï¼ˆæ–‡ä»¶å°¾ - æ–‡ä»¶å¤´  å•ä½ï¼šå­—èŠ‚ï¼‰ */
-		fseek(fontFile, 0, SEEK_SET); /* é‡æ–°è®¾ç½®æ–‡ä»¶æŒ‡é’ˆåˆ°æ–‡ä»¶å¤´ */
+		fseek(fontFile, 0, SEEK_END); /* ÉèÖÃÎÄ¼şÖ¸Õëµ½ÎÄ¼şÎ²£¬»ùÓÚÎÄ¼şÎ²Æ«ÒÆ0×Ö½Ú */
+		long size = ftell(fontFile);       /* »ñÈ¡ÎÄ¼ş´óĞ¡£¨ÎÄ¼şÎ² - ÎÄ¼şÍ·  µ¥Î»£º×Ö½Ú£© */
+		fseek(fontFile, 0, SEEK_SET); /* ÖØĞÂÉèÖÃÎÄ¼şÖ¸Õëµ½ÎÄ¼şÍ· */
 
 		uint8_t* buffer = (uint8_t*)malloc(size);
 		buffer_ = std::shared_ptr<uint8_t>(buffer, &free);
@@ -203,9 +203,11 @@ public:
 		fclose(fontFile);
 
 		int offset = 0;
-		if (index && index < stbtt_GetNumberOfFonts(buffer))
+		int nFonts = stbtt_GetNumberOfFonts(buffer);
+		if (index >=0 && index < nFonts)
 			offset = stbtt_GetFontOffsetForIndex(buffer, index);
-		if (!stbtt_InitFont(&info_, buffer, 0))
+		printf("%s with %d/%d fonts, use offeset %d\n", path, index, nFonts, offset);
+		if (!stbtt_InitFont(&info_, buffer, offset))
 		{
 			printf("stb init font failed\n");
 			return false;
@@ -214,8 +216,8 @@ public:
 	}
 
 	bool setFontSize(float pixels) {
-		/* è®¡ç®—å­—ä½“ç¼©æ”¾ */
-		// float pixels = 64.0;                                    /* å­—ä½“å¤§å°ï¼ˆå­—å·ï¼‰ */
+		/* ¼ÆËã×ÖÌåËõ·Å */
+		// float pixels = 64.0;                                    /* ×ÖÌå´óĞ¡£¨×ÖºÅ£© */
 		scale = stbtt_ScaleForPixelHeight(&info_, pixels); /* scale = pixels / (ascent - descent) */
 
 		lineGap = descent = ascent = 0;
@@ -238,9 +240,9 @@ public:
 			}
 			else{
 				/**
-				* è·å–æ°´å¹³æ–¹å‘ä¸Šçš„åº¦é‡
-				* advanceWidthï¼šå­—å®½ï¼›
-				* leftSideBearingï¼šå·¦ä¾§ä½ç½®ï¼›
+				* »ñÈ¡Ë®Æ½·½ÏòÉÏµÄ¶ÈÁ¿
+				* advanceWidth£º×Ö¿í£»
+				* leftSideBearing£º×ó²àÎ»ÖÃ£»
 				*/
 				int advanceWidth = 0;
 				int leftSideBearing = 0;
@@ -248,17 +250,17 @@ public:
 				leftSideBearing = roundf(leftSideBearing * scale);
 				advanceWidth = roundf(advanceWidth * scale);
 
-				/* è·å–å­—ç¬¦çš„è¾¹æ¡†ï¼ˆè¾¹ç•Œï¼‰
+				/* »ñÈ¡×Ö·ûµÄ±ß¿ò£¨±ß½ç£©
 				int c_x1, c_y1, c_x2, c_y2;
 				stbtt_GetCodepointBitmapBox(&info_, codep, scale, scale, &c_x1, &c_y1, &c_x2, &c_y2);
 				// real write pos
 				int y = height + roundf(scale * ascent) + c_y1;
 				int x = nextX + leftSideBearing + c_x1;
 				*/
-				/* è°ƒæ•´x */
+				/* µ÷Õûx */
 				nextX += advanceWidth;
 
-				/* è°ƒæ•´å­—è· */
+				/* µ÷Õû×Ö¾à */
 				if (text[1]) {
 					nextX += roundf(scale * stbtt_GetCodepointKernAdvance(&info_, codep, text[1]));
 				}
@@ -289,13 +291,13 @@ public:
 		codes.push_back(0);
 		return drawText(codes.data(), color, bmp, x, y, stride, channel, owidth, oheight);
 	}
-	// ç»˜åˆ¶unicode
-	int drawText(const int* text, ///< unicodeæ–‡æœ¬å¿…é¡»ä»¥0ç»“å°¾ 
-		uint32_t color, ///< ç»˜åˆ¶é¢œè‰²
-		uint8_t* bmp, ///< è¾“å‡ºä½å›¾
-		int x, int y, ///< è¾“å‡ºä½ç½® 
-		int width, int channel, ///< è¾“å‡ºä½å›¾å®½å’Œé€šé“æ•° 1,3,4
-		int& owidth, int& oheight ///< æ–‡æœ¬å ç”¨çš„å®½å’Œé«˜
+	// »æÖÆunicode
+	int drawText(const int* text, ///< unicodeÎÄ±¾±ØĞëÒÔ0½áÎ² 
+		uint32_t color, ///< »æÖÆÑÕÉ«
+		uint8_t* bmp, ///< Êä³öÎ»Í¼
+		int x, int y, ///< Êä³öÎ»ÖÃ 
+		int width, int channel, ///< Êä³öÎ»Í¼¿íºÍÍ¨µÀÊı 1,3,4
+		int& owidth, int& oheight ///< ÎÄ±¾Õ¼ÓÃµÄ¿íºÍ¸ß
 		) {
 		owidth = oheight = 0;
 		int nextX = 0;
@@ -311,9 +313,9 @@ public:
 			}
 			else{
 				/**
-				* è·å–æ°´å¹³æ–¹å‘ä¸Šçš„åº¦é‡
-				* advanceWidthï¼šå­—å®½ï¼›
-				* leftSideBearingï¼šå·¦ä¾§ä½ç½®ï¼›
+				* »ñÈ¡Ë®Æ½·½ÏòÉÏµÄ¶ÈÁ¿
+				* advanceWidth£º×Ö¿í£»
+				* leftSideBearing£º×ó²àÎ»ÖÃ£»
 				*/
 				int advanceWidth = 0;
 				int leftSideBearing = 0;
@@ -321,14 +323,14 @@ public:
 				leftSideBearing = roundf(leftSideBearing * scale);
 				advanceWidth = roundf(advanceWidth * scale);
 
-				/* è·å–å­—ç¬¦çš„è¾¹æ¡†ï¼ˆè¾¹ç•Œï¼‰ */
+				/* »ñÈ¡×Ö·ûµÄ±ß¿ò£¨±ß½ç£© */
 				int c_x1, c_y1, c_x2, c_y2;
 				stbtt_GetCodepointBitmapBox(&info_, codep, scale, scale, &c_x1, &c_y1, &c_x2, &c_y2);
 
 				int ry = oheight + roundf(scale *ascent) + c_y1;
 				int rx = nextX + leftSideBearing + c_x1;
 				int stride = width * channel;
-				/* æ¸²æŸ“å­—ç¬¦ */
+				/* äÖÈ¾×Ö·û */
 				uint8_t* d = bmp + (x + rx) * channel + (ry + y) * stride;
 				// stbtt_MakeCodepointBitmap(&info_, d, c_x2 - c_x1, c_y2 - c_y1, stride_x, scale, scale, codep);
 				int w, h;
@@ -341,7 +343,7 @@ public:
 							// uint32_t val = alpha * color;
 							uint8_t* p = d + i*channel;
 							uint8_t* s = (uint8_t*)&color;
-							// å‡è®¾ä½å­—èŠ‚åœ¨ä½ä½
+							// ¼ÙÉèµÍ×Ö½ÚÔÚµÍÎ»
 							int n = channel;
 							if (n > 3) n = 3;
 							for (int i = 0; i < n; i++) {
@@ -353,10 +355,10 @@ public:
 				}
 				stbtt_FreeBitmap(s, nullptr);
 
-				/* è°ƒæ•´x */
+				/* µ÷Õûx */
 				nextX += advanceWidth;
 
-				/* è°ƒæ•´å­—è· */
+				/* µ÷Õû×Ö¾à */
 				if (text[1]) {
 					nextX += roundf(scale * stbtt_GetCodepointKernAdvance(&info_, codep, text[1]));
 				}
@@ -368,20 +370,21 @@ public:
 
 int main(int argc, const char *argv[])
 {
-	/* åŠ è½½å­—ä½“ï¼ˆ.ttfï¼‰æ–‡ä»¶ */
-	const TCHAR* word = _T("STB\nHelloä¸–ç•Œ\n abcd!!!");
+	/* ¼ÓÔØ×ÖÌå£¨.ttf£©ÎÄ¼ş */
+	const TCHAR* word = _T("STB\nHello ÊÀ½ç\n abcd!!!");
+	const char* word2 = u8"ÄãºÃ!!!";
 	const char* fpath = "input.jpg";
 	if (argc>1) fpath = argv[1];
 	//if (argc>2) word = argv[2];
 
 	stbFont font;
-	if (!font.open("c:/windows/fonts/times.ttf")) {
+	if (!font.open("c:/windows/fonts/msyh.ttc")) {
 		return -1;
 	}
 	font.setFontSize(64);
-	/* åŠ è½½ä½å›¾ */
-	int bitmap_w = 512; /* ä½å›¾çš„å®½ */
-	int bitmap_h = 328; /* ä½å›¾çš„é«˜ */
+	/* ¼ÓÔØÎ»Í¼ */
+	int bitmap_w = 512; /* Î»Í¼µÄ¿í */
+	int bitmap_h = 328; /* Î»Í¼µÄ¸ß */
 	int channel = 3;
 	unsigned char* bitmap = stbi_load(fpath, &bitmap_w, &bitmap_h, &channel, 3);
 	if (!bitmap) {
@@ -392,7 +395,7 @@ int main(int argc, const char *argv[])
 	int width, height;
 	font.drawText(word, 0x000000FF, bitmap, 10, 10, bitmap_w, channel, width, height);
 
-	/* å°†ä½å›¾æ•°æ®ä¿å­˜åˆ°1é€šé“çš„pngå›¾åƒä¸­ */
+	/* ½«Î»Í¼Êı¾İ±£´æµ½1Í¨µÀµÄpngÍ¼ÏñÖĞ */
 	stbi_write_png("stb.png", bitmap_w, bitmap_h, channel, bitmap, bitmap_w * channel);
 
 	stbi_image_free(bitmap);
@@ -400,24 +403,24 @@ int main(int argc, const char *argv[])
 	return 0;
 }
 /*
-ä½¿ç”¨stb_truetypeåº“è§£ættfå­—ä½“çš„æ­¥éª¤é€šå¸¸å¦‚ä¸‹ï¼š
-1ã€åŠ è½½å¹¶åˆå§‹åŒ–ttfå­—ä½“æ–‡ä»¶ï¼›
-2ã€è®¾ç½®å­—ä½“å¤§å°ï¼ˆå­—å·ï¼‰å¹¶è®¡ç®—ç¼©æ”¾æ¯”ä¾‹ï¼›
-3ã€è·å–å‚ç›´æ–¹å‘ä¸Šçš„åº¦é‡å¹¶æ ¹æ®ç¼©æ”¾æ¯”ä¾‹è°ƒæ•´ï¼Œæ¯”å¦‚å­—é«˜ã€è¡Œé—´è·ç­‰ï¼›
-4ã€è·å–æ°´å¹³æ–¹å‘ä¸Šçš„åº¦é‡ï¼Œæ¯”å¦‚å­—å®½ã€å­—é—´è·ç­‰ï¼›
-5ã€è·å–å­—ç¬¦å›¾ç‰‡çš„è¾¹æ¡†ï¼ˆæ¯ä¸ªå­—ç¬¦è½¬åŒ–ä¸ºå›¾åƒçš„è¾¹ç•Œï¼‰ï¼›
-6ã€è°ƒæ•´æ¯ä¸ªå­—ä½“å›¾åƒçš„å®½é«˜ï¼ˆä»£ç ä¸­çš„xã€yï¼‰ï¼Œå¹¶æ¸²æŸ“å­—ä½“ï¼›
+Ê¹ÓÃstb_truetype¿â½âÎöttf×ÖÌåµÄ²½ÖèÍ¨³£ÈçÏÂ£º
+1¡¢¼ÓÔØ²¢³õÊ¼»¯ttf×ÖÌåÎÄ¼ş£»
+2¡¢ÉèÖÃ×ÖÌå´óĞ¡£¨×ÖºÅ£©²¢¼ÆËãËõ·Å±ÈÀı£»
+3¡¢»ñÈ¡´¹Ö±·½ÏòÉÏµÄ¶ÈÁ¿²¢¸ù¾İËõ·Å±ÈÀıµ÷Õû£¬±ÈÈç×Ö¸ß¡¢ĞĞ¼ä¾àµÈ£»
+4¡¢»ñÈ¡Ë®Æ½·½ÏòÉÏµÄ¶ÈÁ¿£¬±ÈÈç×Ö¿í¡¢×Ö¼ä¾àµÈ£»
+5¡¢»ñÈ¡×Ö·ûÍ¼Æ¬µÄ±ß¿ò£¨Ã¿¸ö×Ö·û×ª»¯ÎªÍ¼ÏñµÄ±ß½ç£©£»
+6¡¢µ÷ÕûÃ¿¸ö×ÖÌåÍ¼ÏñµÄ¿í¸ß£¨´úÂëÖĞµÄx¡¢y£©£¬²¢äÖÈ¾×ÖÌå£»
 
-éœ€è¦è°ƒæ•´çš„å‚æ•°ä¸»è¦æ˜¯å­—ä½“å¤§å°ï¼ˆå­—å·ï¼‰ï¼Œä½¿ç”¨è¿‡ç¨‹ä¸­éœ€è¦æ³¨æ„ä»¥ä¸‹ä¸¤ç‚¹ï¼š
-1ã€ä¸Šé¢å·²ç»æè¿‡ï¼Œè¿™é‡Œå†æä¸€éï¼Œåœ¨åŒ…å«stb_truetype.hå¤´æ–‡ä»¶çš„æ—¶å€™éœ€è¦å®šä¹‰STB_TRUETYPE_IMPLEMENTATIONï¼Œå¦åˆ™å°†ä¼šæ— æ³•ä½¿ç”¨ã€‚
-2ã€è°ƒç”¨stb_truetypeåº“å‡½æ•°ä¼ å…¥çš„å­—ç¬¦ç¼–ç å¿…é¡»æ˜¯unicodeç¼–ç ã€‚
+ĞèÒªµ÷ÕûµÄ²ÎÊıÖ÷ÒªÊÇ×ÖÌå´óĞ¡£¨×ÖºÅ£©£¬Ê¹ÓÃ¹ı³ÌÖĞĞèÒª×¢ÒâÒÔÏÂÁ½µã£º
+1¡¢ÉÏÃæÒÑ¾­Ìá¹ı£¬ÕâÀïÔÙÌáÒ»±é£¬ÔÚ°üº¬stb_truetype.hÍ·ÎÄ¼şµÄÊ±ºòĞèÒª¶¨ÒåSTB_TRUETYPE_IMPLEMENTATION£¬·ñÔò½«»áÎŞ·¨Ê¹ÓÃ¡£
+2¡¢µ÷ÓÃstb_truetype¿âº¯Êı´«ÈëµÄ×Ö·û±àÂë±ØĞëÊÇunicode±àÂë¡£
 */
 #if 0
 if((str[i] & 0x80) == 0) {
     g = stbtt_FindGlyphIndex(&f, str[i]);
 } else {
     if (str[i] >= 0xC0 && str[i] <= 0xDF) { 
-        // then é¦–å­—èŠ‚ UTF-8 å ç”¨2ä¸ªå­—èŠ‚ï¼Œä¸ºäº†æ·»åŠ ä¸­æ–‡å­—ç¬¦Â·
+        // then Ê××Ö½Ú UTF-8 Õ¼ÓÃ2¸ö×Ö½Ú£¬ÎªÁËÌí¼ÓÖĞÎÄ×Ö·û¡¤
         /* for chinese */
         cn[0] = str[i];
         cn[1] = str[i+1];
