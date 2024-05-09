@@ -200,9 +200,11 @@ void CvxText::putWChar(Mat& img, wchar_t wc, Point& pos, Scalar color, int orgx)
 	// 根据unicode生成字体的二值位图
 	FT_UInt glyph_index = FT_Get_Char_Index(m_face, wc);
 	int flags = FT_LOAD_DEFAULT;
-	flags = FT_LOAD_DEFAULT | FT_LOAD_NO_AUTOHINT | FT_OUTLINE_HIGH_PRECISION;
+	// flags = FT_LOAD_DEFAULT | FT_LOAD_NO_AUTOHINT | FT_OUTLINE_HIGH_PRECISION;
 	FT_Load_Glyph(m_face, glyph_index, flags);
-	FT_Render_Glyph(m_face->glyph, FT_RENDER_MODE_MONO);
+	// FT_RENDER_MODE_MONO 每像素输出一个位，
+	// FT_RENDER_MODE_NORMAL 每像素输出一字节，利用这字节来进行alpha混合
+	FT_Render_Glyph(m_face->glyph, FT_RENDER_MODE_NORMAL);// FT_RENDER_MODE_MONO);
 
 	FT_GlyphSlot slot = m_face->glyph;
 
@@ -219,9 +221,10 @@ void CvxText::putWChar(Mat& img, wchar_t wc, Point& pos, Scalar color, int orgx)
 
 	for (int i = 0; i < rows; ++i) {
 		for (int j = 0; j < cols; ++j) {
-			int off = i * slot->bitmap.pitch + j / 8;
+			int off = i * slot->bitmap.pitch + j;// / 8;
 
-			if (slot->bitmap.buffer[off] & (0xC0 >> (j % 8))) {
+			if (slot->bitmap.buffer[off]) //& (0xC0 >> (j % 8))) 
+			{
 				int r = pos.y - (rows - 1 - i);
 				int c = pos.x + j;
 
@@ -230,7 +233,7 @@ void CvxText::putWChar(Mat& img, wchar_t wc, Point& pos, Scalar color, int orgx)
 					Scalar scalar = Scalar(pixel[0], pixel[1], pixel[2]);
 
 					// 进行色彩融合
-					float p = m_fontDiaphaneity;
+					float p = slot->bitmap.buffer[off] / 255.0;// m_fontDiaphaneity;
 					for (int k = 0; k < 4; ++k) {
 						scalar.val[k] = scalar.val[k] * (1 - p) + color.val[k] * p;
 					}

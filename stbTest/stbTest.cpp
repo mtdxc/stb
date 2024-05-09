@@ -337,9 +337,16 @@ public:
 					for (size_t i = 0; i < w; i++) {
 						uint8_t& val8 = s[j*w + i];
 						if (val8 > 0) {
-							uint32_t val = val8 * color / 255;
-							//uint8_t* p = (uint8_t*)&val;
-							memcpy(d + i*channel , &val, channel);
+							float alpha = val8 / 255.0;
+							// uint32_t val = alpha * color;
+							uint8_t* p = d + i*channel;
+							uint8_t* s = (uint8_t*)&color;
+							// 假设低字节在低位
+							int n = channel;
+							if (n > 3) n = 3;
+							for (int i = 0; i < n; i++) {
+								p[i] = s[i] * alpha + (1 - alpha) * p[i];
+							}
 						}
 					}
 					d += stride;
